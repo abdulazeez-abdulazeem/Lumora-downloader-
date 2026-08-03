@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#050505" />
+  <title>Lumora Downloader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #050505;
+      --bg: #0B0B0B;
+      --violet: #7C3AED;
+      --violet-mid: #8B5CF6;
+      --violet-light: #A855F7;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --glass: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --radius: 24px;
+      --radius-sm: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-deep);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+      line-height: 1.5;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ===== AMBIENT BACKGROUND ===== */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.35;
+      animation: orbFloat 18s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 340px;
+      height: 340px;
+      background: radial-gradient(circle, var(--violet) 0%, transparent 70%);
+      top: -80px;
+      left: -60px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 280px;
+      height: 280px;
+      background: radial-gradient(circle, var(--violet-light) 0%, transparent 70%);
+      bottom: 10%;
+      right: -80px;
+      animation-delay: -6s;
+      opacity: 0.25;
+    }
+
+    .orb-3 {
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, #4C1D95 0%, transparent 70%);
+      top: 45%;
+      left: 20%;
+      animation-delay: -12s;
+      opacity: 0.2;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* Subtle noise overlay */
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* Tiny particles */
+    .particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background: rgba(168, 85, 247, 0.6);
+      border-radius: 50%;
+      animation: particleDrift linear infinite;
+    }
+
+    @keyframes particleDrift {
+      0% { transform: translateY(100vh) scale(0); opacity: 0; }
+      10% { opacity: 0.7; }
+      90% { opacity: 0.5; }
+      100% { transform: translateY(-20vh) scale(1); opacity: 0; }
+    }
+
+    /* ===== LAYOUT ===== */
+    .container {
+      width: 100%;
+      max-width: 560px;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+      animation: fadeUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .logo {
+      font-size: 1.85rem;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      background: linear-gradient(135deg, #E9D5FF 0%, var(--violet-light) 40%, var(--violet) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 10px;
+      filter: drop-shadow(0 0 24px rgba(124, 58, 237, 0.35));
+    }
+
+    .subtitle {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      max-width: 400px;
+      margin: 0 auto;
+      font-weight: 400;
+    }
+
+    /* ===== GLASS CARDS ===== */
+    .card {
+      background: var(--glass);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 18px;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(124, 58, 237, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      position: relative;
+      animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(135deg, rgba(168, 85, 247, 0.25), transparent 50%, rgba(124, 58, 237, 0.1));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        0 16px 48px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(124, 58, 237, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .card:nth-child(2) { animation-delay: 0.05s; }
+    .card:nth-child(3) { animation-delay: 0.1s; }
+    .card:nth-child(4) { animation-delay: 0.15s; }
+
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--violet-light);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 18px;
+      opacity: 0.9;
+    }
+
+    /* ===== FORM ELEMENTS ===== */
+    label {
+      display: block;
+      font-size: 0.88rem;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    input[type="text"],
+    select {
+      width: 100%;
+      padding: 15px 18px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    select:focus {
+      border-color: rgba(124, 58, 237, 0.6);
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2), 0 0 24px rgba(124, 58, 237, 0.15);
+    }
+
+    input[type="text"]::placeholder {
+      color: #64748B;
+    }
+
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394A3B8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 40px;
+      cursor: pointer;
+    }
+
+    .row {
+      display: flex;
+      gap: 14px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .field {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    /* Checkbox */
+    .checkbox-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 20px;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 0;
+    }
+
+    .checkbox-wrap input {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--violet);
+      cursor: pointer;
+      border-radius: 6px;
+    }
+
+    .checkbox-wrap span {
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    /* ===== BUTTONS ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 16px 24px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.25s, opacity 0.2s;
+      min-height: 52px;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, var(--violet) 0%, var(--violet-mid) 50%, var(--violet-light) 100%);
+      color: white;
+      margin-top: 22px;
+      box-shadow:
+        0 4px 24px rgba(124, 58, 237, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      box-shadow:
+        0 8px 32px rgba(124, 58, 237, 0.55),
+        0 0 40px rgba(168, 85, 247, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Ripple effect */
+    .btn .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.35);
+      transform: scale(0);
+      animation: ripple 0.6s linear;
+      pointer-events: none;
+    }
+
+    @keyframes ripple {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(12px);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #059669, #10B981);
+      color: white;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.35);
+    }
+
+    /* ===== PREVIEW ===== */
+    #previewSection {
+      display: none;
+    }
+
+    #previewSection.visible {
+      display: block;
+    }
+
+    .preview-inner {
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+    }
+
+    .thumb-wrap {
+      flex-shrink: 0;
+      width: 148px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #111;
+      aspect-ratio: 16/9;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .thumb-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .preview-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .preview-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      color: #F1F5F9;
+    }
+
+    .preview-channel {
+      font-size: 0.9rem;
+      color: var(--violet-light);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .preview-duration {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    /* ===== PROGRESS ===== */
+    #progressSection {
+      display: none;
+    }
+
+    #progressSection.visible {
+      display: block;
+    }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 99px;
+      overflow: hidden;
+      margin: 14px 0;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--violet), var(--violet-light));
+      border-radius: 99px;
+      transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 16px rgba(168, 85, 247, 0.5);
+    }
+
+    .progress-status {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    /* ===== ERROR ===== */
+    .error-msg {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #FCA5A5;
+      padding: 13px 16px;
+      border-radius: 14px;
+      font-size: 0.92rem;
+      margin-top: 16px;
+      display: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .error-msg.visible {
+      display: block;
+      animation: shake 0.4s ease;
+    }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 5, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: rgba(15, 15, 20, 0.85);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      padding: 32px 26px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 90dvh;
+      overflow-y: auto;
+      box-shadow:
+        0 24px 64px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(124, 58, 237, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      transform: translateY(24px) scale(0.96);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .modal::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      padding: 1px;
+      background: linear-gradient(160deg, rgba(168, 85, 247, 0.3), transparent 40%, rgba(124, 58, 237, 0.15));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .modal-overlay.open .modal {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal h2 {
+      font-size: 1.3rem;
+      margin-bottom: 12px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .modal p {
+      color: var(--text-muted);
+      font-size: 0.94rem;
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-actions .btn {
+      width: 100%;
+    }
+
+    .instructions {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 18px;
+      font-size: 0.9rem;
+      line-height: 1.65;
+      margin: 16px 0;
+      color: #E2E8F0;
+    }
+
+    .instructions ol {
+      padding-left: 20px;
+      margin-top: 8px;
+    }
+
+    .instructions li {
+      margin-bottom: 7px;
+    }
+
+    /* ===== MERGE TOOL ===== */
+    #mergeSection {
+      display: none;
+    }
+
+    #mergeSection.visible {
+      display: block;
+    }
+
+    .file-btn {
+      width: 100%;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px dashed rgba(255, 255, 255, 0.14);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 0.94rem;
+      cursor: pointer;
+      text-align: center;
+      transition: border-color 0.25s, background 0.25s, color 0.25s;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .file-btn:hover,
+    .file-btn.has-file {
+      border-color: rgba(124, 58, 237, 0.55);
+      background: rgba(124, 58, 237, 0.1);
+      color: var(--text);
+    }
+
+    .file-btn input {
+      display: none;
+    }
+
+    .merge-note {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      background: rgba(124, 58, 237, 0.08);
+      border: 1px solid rgba(124, 58, 237, 0.2);
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 16px;
+      line-height: 1.55;
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      margin-top: 28px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: #475569;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* ===== ANIMATIONS ===== */
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 420px) {
+      .preview-inner {
+        flex-direction: column;
+      }
+      .thumb-wrap {
+        width: 100%;
+      }
+      .logo {
+        font-size: 1.6rem;
+      }
+      .card {
+        padding: 20px;
+        border-radius: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Background -->
+  <div class="ambient">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="noise"></div>
+  <div class="particles" id="particles"></div>
+
+  <div class="container">
+    <header>
+      <div class="logo">✨ Lumora Downloader</div>
+      <p class="subtitle">Grab the video and the audio in one pass — then compile them into a single file.</p>
+    </header>
+
+    <!-- INPUT SECTION -->
+    <section class="card">
+      <div class="card-title">Video Source</div>
+
+      <label for="urlInput">YouTube URL</label>
+      <input
+        type="text"
+        id="urlInput"
+        placeholder="https://youtube.com/watch?v=..."
+        autocomplete="off"
+        spellcheck="false"
+      />
+
+      <div class="row">
+        <div class="field">
+          <label for="qualitySelect">Quality</label>
+          <select id="qualitySelect">
+            <option value="720">720p</option>
+            <option value="480">480p</option>
+            <option value="360">360p</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="checkbox-wrap">
+        <input type="checkbox" id="audioOnly" />
+        <span>Audio only (MP3)</span>
+      </label>
+
+      <button class="btn btn-primary" id="downloadBtn" disabled>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download
+      </button>
+
+      <div class="error-msg" id="errorMsg"></div>
+    </section>
+
+    <!-- PREVIEW SECTION -->
+    <section class="card" id="previewSection">
+      <div class="card-title">Preview</div>
+      <div class="preview-inner">
+        <div class="thumb-wrap">
+          <img id="thumbImg" src="" alt="Video thumbnail" />
+        </div>
+        <div class="preview-meta">
+          <div class="preview-title" id="videoTitle">—</div>
+          <div class="preview-channel" id="videoChannel">—</div>
+          <div class="preview-duration" id="videoDuration"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROGRESS SECTION -->
+    <section class="card" id="progressSection">
+      <div class="card-title">Download Progress</div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-status" id="progressStatus">Ready</div>
+    </section>
+
+    <!-- MERGE TOOL -->
+    <section class="card" id="mergeSection">
+      <div class="card-title">Compile / Merge Tool</div>
+      <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:16px;">
+        Select the files you downloaded, then merge them locally.
+      </p>
+
+      <label class="file-btn" id="mp4Label">
+        Select MP4 Video
+        <input type="file" id="mp4Input" accept="video/mp4,video/*" />
+      </label>
+
+      <label class="file-btn" id="mp3Label">
+        Select MP3 Audio
+        <input type="file" id="mp3Input" accept="audio/mp3,audio/mpeg,audio/*" />
+      </label>
+
+      <button class="btn btn-primary" id="mergeBtn" disabled style="margin-top:8px;">
+        Merge Files
+      </button>
+
+      <div id="mergeProgress" style="display:none;margin-top:16px;">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="mergeFill" style="width:0%"></div>
+        </div>
+        <div class="progress-status" id="mergeStatus">Preparing…</div>
+      </div>
+
+      <button class="btn btn-success" id="downloadMergedBtn" style="display:none;margin-top:14px;width:100%;">
+        Download Merged File
+      </button>
+
+      <div class="merge-note">
+        💡 For best results on Android, use a dedicated video editing app such as <strong>InShot</strong>, <strong>Video Merger</strong>, or <strong>CapCut</strong>. Browser-based merging has limited support and may fail on large files.
+      </div>
+    </section>
+
+    <footer>
+      Lumora Downloader • Crafted for mobile
+    </footer>
+  </div>
+
+  <!-- COMPILATION MODAL -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <h2 id="modalTitle">📦 Downloads Ready!</h2>
+      <p id="modalMessage">MP4 video and MP3 audio are downloading in the new tabs.</p>
+      <div id="modalQuestion">
+        <p style="margin-bottom:16px;">Do you want to compile MP4 and MP3 together?</p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="yesCompileBtn">✅ Yes, Compile Them</button>
+          <button class="btn btn-secondary" id="noCompileBtn">❌ No, Keep Separate</button>
+        </div>
+      </div>
+      <div id="modalInstructions" style="display:none;">
+        <div class="instructions">
+          <strong>📝 To compile:</strong>
+          <ol>
+            <li>Download both files from the tabs</li>
+            <li>Use an app like <strong>Video Merger</strong> or <strong>InShot</strong> on Android</li>
+            <li>Select the MP4 video and MP3 audio</li>
+            <li>Export as a single MP4 file</li>
+          </ol>
+        </div>
+        <button class="btn btn-primary" id="showMergeToolBtn" style="width:100%;">Open Built-in Merge Tool</button>
+        <button class="btn btn-secondary" id="closeModalBtn" style="width:100%;margin-top:10px;">Close</button>
+      </div>
+      <div id="modalSeparate" style="display:none;">
+        <p style="color:#86EFAC;font-size:1rem;">✅ Files downloading separately. Check your Downloads folder.</p>
+        <button class="btn btn-primary" id="closeSeparateBtn" style="width:100%;margin-top:16px;">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ========== PARTICLES ==========
+    (function createParticles() {
+      const container = document.getElementById('particles');
+      const count = 18;
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDuration = (12 + Math.random() * 18) + 's';
+        p.style.animationDelay = (Math.random() * 15) + 's';
+        p.style.opacity = 0.3 + Math.random() * 0.5;
+        p.style.width = p.style.height = (1 + Math.random() * 2) + 'px';
+        container.appendChild(p);
+      }
+    })();
+
+    // ========== DOM ELEMENTS ==========
+    const urlInput = document.getElementById('urlInput');
+    const qualitySelect = document.getElementById('qualitySelect');
+    const audioOnly = document.getElementById('audioOnly');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const errorMsg = document.getElementById('errorMsg');
+    const previewSection = document.getElementById('previewSection');
+    const thumbImg = document.getElementById('thumbImg');
+    const videoTitle = document.getElementById('videoTitle');
+    const videoChannel = document.getElementById('videoChannel');
+    const videoDuration = document.getElementById('videoDuration');
+    const progressSection = document.getElementById('progressSection');
+    const progressFill = document.getElementById('progressFill');
+    const progressStatus = document.getElementById('progressStatus');
+    const mergeSection = document.getElementById('mergeSection');
+    const mp4Input = document.getElementById('mp4Input');
+    const mp3Input = document.getElementById('mp3Input');
+    const mp4Label = document.getElementById('mp4Label');
+    const mp3Label = document.getElementById('mp3Label');
+    const mergeBtn = document.getElementById('mergeBtn');
+    const mergeProgress = document.getElementById('mergeProgress');
+    const mergeFill = document.getElementById('mergeFill');
+    const mergeStatus = document.getElementById('mergeStatus');
+    const downloadMergedBtn = document.getElementById('downloadMergedBtn');
+
+    // Modal
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalQuestion = document.getElementById('modalQuestion');
+    const modalInstructions = document.getElementById('modalInstructions');
+    const modalSeparate = document.getElementById('modalSeparate');
+    const yesCompileBtn = document.getElementById('yesCompileBtn');
+    const noCompileBtn = document.getElementById('noCompileBtn');
+    const showMergeToolBtn = document.getElementById('showMergeToolBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const closeSeparateBtn = document.getElementById('closeSeparateBtn');
+
+    let currentUrl = '';
+    let videoId = null;
+    let debounceTimer = null;
+
+    // ========== RIPPLE EFFECT ==========
+    document.querySelectorAll('.btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        const ripple = document.createElement('span');
+        ripple.className = 'ripple';
+        const rect = this.getBoundingClientRect();
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = size + 'px';
+        ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+        ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+        this.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+      });
+    });
+
+    // ========== HELPERS ==========
+    function extractVideoId(url) {
+      if (!url) return null;
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/)([^&\n?#]+)/,
+        /^([a-zA-Z0-9_-]{11})$/
+      ];
+      for (const re of patterns) {
+        const m = url.match(re);
+        if (m && m[1]) return m[1];
+      }
+      return null;
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('visible');
+    }
+
+    function clearError() {
+      errorMsg.classList.remove('visible');
+      errorMsg.textContent = '';
+    }
+
+    function setProgress(percent, status) {
+      progressFill.style.width = percent + '%';
+      progressStatus.textContent = status;
+    }
+
+    // ========== PREVIEW (oEmbed) ==========
+    async function fetchPreview(url) {
+      clearError();
+      videoId = extractVideoId(url);
+      if (!videoId) {
+        previewSection.classList.remove('visible');
+        downloadBtn.disabled = true;
+        return;
+      }
+
+      currentUrl = url.startsWith('http') ? url : 'https://www.youtube.com/watch?v=' + videoId;
+
+      // Prefer our own backend if available, otherwise fall back to oEmbed
+      try {
+        const res = await fetch(`/api/info?url=${encodeURIComponent(currentUrl)}`);
+        if (res.ok) {
+          const data = await res.json();
+          thumbImg.src = data.thumbnail || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+          videoTitle.textContent = data.title || 'Unknown title';
+          videoChannel.textContent = data.channel || 'Unknown channel';
+          if (data.duration) {
+            const m = Math.floor(data.duration / 60);
+            const s = data.duration % 60;
+            videoDuration.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+          } else {
+            videoDuration.textContent = '';
+          }
+          previewSection.classList.add('visible');
+          downloadBtn.disabled = false;
+          return;
+        }
+      } catch (e) {
+        // Backend not available – fall through to oEmbed
+      }
+
+      try {
+        const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(currentUrl)}&format=json`;
+        const res = await fetch(oembedUrl);
+        if (!res.ok) throw new Error('oEmbed failed');
+        const data = await res.json();
+
+        thumbImg.src = data.thumbnail_url || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+        videoTitle.textContent = data.title || 'Unknown title';
+        videoChannel.textContent = data.author_name || 'Unknown channel';
+        videoDuration.textContent = '';
+
+        previewSection.classList.add('visible');
+        downloadBtn.disabled = false;
+      } catch (err) {
+        console.warn('Preview error:', err);
+        thumbImg.src = `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+        videoTitle.textContent = 'Video found (preview limited)';
+        videoChannel.textContent = 'YouTube';
+        videoDuration.textContent = '';
+        previewSection.classList.add('visible');
+        downloadBtn.disabled = false;
+        showError('❌ Could not fetch full video info. You can still download.');
+      }
+    }
+
+    urlInput.addEventListener('input', () => {
+      clearTimeout(debounceTimer);
+      const val = urlInput.value.trim();
+      if (!val) {
+        previewSection.classList.remove('visible');
+        downloadBtn.disabled = true;
+        clearError();
+        return;
+      }
+      debounceTimer = setTimeout(() => fetchPreview(val), 500);
+    });
+
+    urlInput.addEventListener('paste', () => {
+      setTimeout(() => {
+        const val = urlInput.value.trim();
+        if (val) fetchPreview(val);
+      }, 50);
+    });
+
+    // ========== DOWNLOAD FLOW (uses your yt-dlp backend) ==========
+    downloadBtn.addEventListener('click', async () => {
+      clearError();
+      const url = urlInput.value.trim();
+      videoId = extractVideoId(url);
+
+      if (!videoId) {
+        showError('❌ Please enter a valid YouTube URL');
+        return;
+      }
+
+      currentUrl = url.startsWith('http') ? url : 'https://www.youtube.com/watch?v=' + videoId;
+      const isAudioOnly = audioOnly.checked;
+      const quality = qualitySelect.value || '720';
+
+      progressSection.classList.add('visible');
+      downloadBtn.disabled = true;
+
+      setProgress(15, '⏳ Fetching video info...');
+      await new Promise(r => setTimeout(r, 400));
+
+      setProgress(35, '⏳ Preparing download...');
+      await new Promise(r => setTimeout(r, 400));
+
+      try {
+        if (isAudioOnly) {
+          setProgress(70, '⏳ Downloading MP3 audio...');
+          // Trigger browser download of the audio stream
+          const audioUrl = `/api/download?url=${encodeURIComponent(currentUrl)}&format=mp3`;
+          const a = document.createElement('a');
+          a.href = audioUrl;
+          a.download = '';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        } else {
+          setProgress(55, '⏳ Downloading MP4 video...');
+          const videoUrl = `/api/download?url=${encodeURIComponent(currentUrl)}&format=mp4&quality=${quality}`;
+          const a1 = document.createElement('a');
+          a1.href = videoUrl;
+          a1.download = '';
+          document.body.appendChild(a1);
+          a1.click();
+          a1.remove();
+
+          // Also offer audio
+          setProgress(80, '⏳ Downloading MP3 audio...');
+          await new Promise(r => setTimeout(r, 600));
+          const audioUrl = `/api/download?url=${encodeURIComponent(currentUrl)}&format=mp3`;
+          const a2 = document.createElement('a');
+          a2.href = audioUrl;
+          a2.download = '';
+          document.body.appendChild(a2);
+          a2.click();
+          a2.remove();
+        }
+
+        setProgress(100, '✅ Download started!');
+        await new Promise(r => setTimeout(r, 500));
+        openModal(isAudioOnly);
+      } catch (e) {
+        console.error(e);
+        showError('❌ Download failed. Make sure the backend is running.');
+      } finally {
+        downloadBtn.disabled = false;
+      }
+    });
+
+    // ========== MODAL LOGIC ==========
+    function openModal(isAudioOnly) {
+      modalQuestion.style.display = isAudioOnly ? 'none' : 'block';
+      modalInstructions.style.display = 'none';
+      modalSeparate.style.display = 'none';
+
+      if (isAudioOnly) {
+        modalTitle.textContent = '📦 Download Started!';
+        modalMessage.textContent = 'Your MP3 audio is being downloaded by the browser. Check your Downloads folder.';
+        modalSeparate.style.display = 'block';
+      } else {
+        modalTitle.textContent = '📦 Downloads Started!';
+        modalMessage.textContent = 'MP4 video and MP3 audio downloads have started. Check your Downloads folder.';
+        modalQuestion.style.display = 'block';
+      }
+
+      modalOverlay.classList.add('open');
+    }
+
+    function closeModal() {
+      modalOverlay.classList.remove('open');
+    }
+
+    yesCompileBtn.addEventListener('click', () => {
+      modalQuestion.style.display = 'none';
+      modalInstructions.style.display = 'block';
+    });
+
+    noCompileBtn.addEventListener('click', () => {
+      modalQuestion.style.display = 'none';
+      modalSeparate.style.display = 'block';
+    });
+
+    showMergeToolBtn.addEventListener('click', () => {
+      closeModal();
+      mergeSection.classList.add('visible');
+      mergeSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+    closeModalBtn.addEventListener('click', closeModal);
+    closeSeparateBtn.addEventListener('click', closeModal);
+
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    // ========== MERGE TOOL ==========
+    let mp4File = null;
+    let mp3File = null;
+
+    mp4Input.addEventListener('change', (e) => {
+      mp4File = e.target.files[0] || null;
+      mp4Label.textContent = mp4File ? `✅ ${mp4File.name}` : 'Select MP4 Video';
+      mp4Label.classList.toggle('has-file', !!mp4File);
+      updateMergeBtn();
+    });
+
+    mp3Input.addEventListener('change', (e) => {
+      mp3File = e.target.files[0] || null;
+      mp3Label.textContent = mp3File ? `✅ ${mp3File.name}` : 'Select MP3 Audio';
+      mp3Label.classList.toggle('has-file', !!mp3File);
+      updateMergeBtn();
+    });
+
+    function updateMergeBtn() {
+      mergeBtn.disabled = !(mp4File && mp3File);
+    }
+
+    mergeBtn.addEventListener('click', async () => {
+      if (!mp4File || !mp3File) return;
+
+      mergeBtn.disabled = true;
+      mergeProgress.style.display = 'block';
+      downloadMergedBtn.style.display = 'none';
+
+      const stages = [
+        { p: 15, s: 'Loading files…' },
+        { p: 40, s: 'Preparing FFmpeg engine…' },
+        { p: 65, s: 'Merging video + audio…' },
+        { p: 90, s: 'Finalizing…' },
+        { p: 100, s: 'Done (see note below)' }
+      ];
+
+      for (const stage of stages) {
+        mergeFill.style.width = stage.p + '%';
+        mergeStatus.textContent = stage.s;
+        await new Promise(r => setTimeout(r, 700));
+      }
+
+      mergeStatus.innerHTML = '⚠️ Browser merge is limited on mobile.<br>Please use InShot / CapCut / Video Merger.';
+      mergeBtn.disabled = false;
+
+      downloadMergedBtn.style.display = 'block';
+      downloadMergedBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(mp4File);
+        a.download = 'lumora-merged-video.mp4';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      };
+    });
+  </script>
+</body>
+</html>

@@ -1,83 +1,69 @@
-# Lumora Backend
+# Lumora Full Stack (yt-dlp)
 
-Simple YouTube metadata + download service for **Lumora Downloader**.
+Reliable YouTube downloader powered by **yt-dlp**.
 
-## Endpoints
+## Features
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/` | Health check |
-| GET | `/api/info?url=YOUTUBE_URL` | Video title, channel, thumbnail, duration, formats |
-| GET | `/api/download?url=...&format=mp4&quality=720` | Streams the file for download |
+- Beautiful glassmorphism frontend (Lumora UI)
+- Video metadata (title, channel, thumbnail, duration)
+- Download MP4 (360p / 480p / 720p / 1080p / best)
+- Download MP3 audio
+- Single deployable project
 
-### Query parameters for `/api/download`
-
-- `url` **(required)** – full YouTube URL
-- `format` – `mp4` (default) or `mp3` / `audio`
-- `quality` – `360`, `480`, `720` (default), `1080`, or `highest`
-
----
-
-## Local development
+## Local run
 
 ```bash
-cd lumora-backend
-npm install
-npm start
+cd lumora-ytdlp
+python -m venv venv
+source venv/bin/activate   # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# yt-dlp also needs ffmpeg for audio conversion
+# Ubuntu/Debian: sudo apt install ffmpeg
+# macOS: brew install ffmpeg
+
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Server runs at `http://localhost:3000`
+Open → http://localhost:8000
 
----
+## Deploy
 
-## Deploy (recommended free options)
+### Railway (recommended)
 
-### 1. Railway (easiest)
+1. Create new project on [railway.app](https://railway.app)
+2. Deploy from this folder (or GitHub)
+3. Railway will detect Python and run the start command
+4. Add environment variable if needed: `PORT` (Railway sets it automatically)
 
-1. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub
-2. Or use Railway CLI:
-   ```bash
-   npm i -g @railway/cli
-   railway login
-   railway init
-   railway up
-   ```
-3. Copy the generated public URL (e.g. `https://lumora-backend-production.up.railway.app`)
-
-### 2. Render
-
-1. [render.com](https://render.com) → New → Web Service
-2. Connect your repo (or upload the folder)
-3. Build command: `npm install`
-4. Start command: `npm start`
-5. Free tier works fine for light use
-
-### 3. Fly.io
-
-```bash
-fly launch
-fly deploy
+**Start command** (set in Railway settings if needed):
+```
+uvicorn main:app --host 0.0.0.0 --port $PORT
 ```
 
----
+### Render
 
-## After deploying
+- New Web Service
+- Build: `pip install -r requirements.txt`
+- Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 
-Copy your public URL (example):
+### Important note about FFmpeg
 
-```
-https://your-lumora-backend.up.railway.app
-```
+For **MP3 conversion** the server needs `ffmpeg` installed.
 
-Then tell me the URL and I will update the **Lumora Downloader** HTML to use it.
+On Railway / Render you may need a custom Dockerfile or a buildpack that includes ffmpeg.
 
----
+If you only need video (MP4) downloads, it works without ffmpeg.
 
-## Notes
+## API
 
-- Uses `@distube/ytdl-core` (maintained fork of ytdl-core)
-- Rate limited to 30 requests / minute / IP
-- Streams the file directly (no temporary storage)
-- Works on mobile browsers when called from the frontend
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/health` | Health check |
+| `GET /api/info?url=YOUTUBE_URL` | Metadata |
+| `GET /api/download?url=...&format=mp4&quality=720` | Stream file |
+| `GET /api/download?url=...&format=mp3` | Audio only |
 
-If downloads start failing in the future (YouTube changes), the most robust long-term solution is to switch the backend to `yt-dlp`. I can help you do that later if needed.
+## After deployment
+
+Once you have the public URL (example: `https://lumora-xxxx.up.railway.app`), tell me and I will update the frontend so the Download button talks to your backend instead of third-party sites.
